@@ -178,12 +178,6 @@ namespace webrtc
             s_formats = SupportedNvEncoderCodecs(m_context);
         if (!s_maxSupportedH264Level.has_value())
             s_maxSupportedH264Level = SupportedMaxH264Level(m_context);
-
-        RTC_LOG(LS_INFO) << "[NvCodec]" << "SupportedNvEncoderCodecs: " << s_formats.size();
-        for (auto& f : s_formats)
-        {
-           RTC_LOG(LS_INFO) << "[NvCodec]" << f.ToString();
-        }
     }
 
     NvEncoderImpl::~NvEncoderImpl() { Release(); }

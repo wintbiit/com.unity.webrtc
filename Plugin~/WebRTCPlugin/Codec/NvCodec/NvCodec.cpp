@@ -125,7 +125,7 @@ namespace webrtc
         std::vector<SdpVideoFormat> supportedFormats;
         for (auto& profile : supportedProfiles)
         {
-            supportedFormats.push_back(CreateH265Format(profile, supportedMaxLevel, H265Tier::kTier0, "SCTP"));
+            supportedFormats.push_back(CreateH265Format(profile, supportedMaxLevel, H265Tier::kTier0, "SRST"));
         }
 
         return supportedFormats;
@@ -141,7 +141,7 @@ namespace webrtc
         return supportedFormats;
     }
 
-    std::vector<SdpVideoFormat> SupportedNvDecoderCodecs(CUcontext context)
+    std::vector<SdpVideoFormat> SupportedH264DecoderCodecs(CUcontext context)
     {
         std::vector<SdpVideoFormat> supportedFormats;
 
@@ -184,8 +184,8 @@ namespace webrtc
         if (GetCudaDeviceCapabilityMajorVersion(context) >= 6)
         {
             supportedFormats = {
-                CreateH265Format(webrtc::H265Profile::kProfileMain, webrtc::H265Level::kLevel5_1, webrtc::H265Tier::kTier0, "SCTP"),
-                CreateH265Format(webrtc::H265Profile::kProfileMain10, webrtc::H265Level::kLevel5_1, webrtc::H265Tier::kTier0, "SCTP"),
+                CreateH265Format(webrtc::H265Profile::kProfileMain, webrtc::H265Level::kLevel5_1, webrtc::H265Tier::kTier0),
+                CreateH265Format(webrtc::H265Profile::kProfileMain10, webrtc::H265Level::kLevel5_1, webrtc::H265Tier::kTier0),
             };
         }
 
@@ -194,6 +194,16 @@ namespace webrtc
             format.parameters.emplace(kSdpKeyNameCodecImpl, kCodecName);
         }
 
+        return supportedFormats;
+    }
+
+    std::vector<SdpVideoFormat> SupportedNvDecoderCodecs(CUcontext context)
+    {
+        std::vector<SdpVideoFormat> supportedFormats;
+        std::vector<SdpVideoFormat> h264Formats = SupportedH264DecoderCodecs(context);
+        std::vector<SdpVideoFormat> h265Formats = SupportedH265DecoderCodecs(context);
+        supportedFormats.insert(supportedFormats.end(), h264Formats.begin(), h264Formats.end());
+        supportedFormats.insert(supportedFormats.end(), h265Formats.begin(), h265Formats.end());
         return supportedFormats;
     }
 
@@ -260,6 +270,12 @@ namespace webrtc
         // It consumes a session to check the encoder capability.
         // Therefore, we check encoder capability only once in the constructor and cache it.
         m_cachedSupportedFormats = SupportedNvEncoderCodecs(context_);
+
+        RTC_LOG(LS_INFO) << "[NvCodec]" << "SupportedNvEncoderCodecs: " << m_cachedSupportedFormats.size();
+        for (auto& f : m_cachedSupportedFormats)
+        {
+            RTC_LOG(LS_INFO) << "[NvCodec]" << f.ToString();
+        }
     }
     NvEncoderFactory::~NvEncoderFactory() = default;
 

@@ -27,6 +27,9 @@ namespace webrtc
     std::vector<SdpVideoFormat> SupportedH264EncoderCodecs(CUcontext context);
     std::vector<SdpVideoFormat> SupportedH265EncoderCodecs(CUcontext context);
 
+    std::vector<SdpVideoFormat> SupportedH264DecoderCodecs(CUcontext context);
+    std::vector<SdpVideoFormat> SupportedH265DecoderCodecs(CUcontext context);
+
     std::vector<SdpVideoFormat> SupportedNvEncoderCodecs(CUcontext context);
     std::vector<SdpVideoFormat> SupportedNvDecoderCodecs(CUcontext context);
 
@@ -152,7 +155,7 @@ namespace webrtc
     inline SdpVideoFormat CreateH265Format(H265Profile profile,
                                 H265Level level,
                                 H265Tier tier,
-                                const std::string& tx_mode,
+                                const std::string& tx_mode = "SRST",
                                 bool add_scalability_modes = false) {
         absl::InlinedVector<ScalabilityMode, kScalabilityModeCount> scalability_modes;
         if (add_scalability_modes) {
