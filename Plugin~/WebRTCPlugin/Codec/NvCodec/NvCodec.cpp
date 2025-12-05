@@ -72,8 +72,16 @@ namespace webrtc
 
         int maxLevel = encoder->GetLevelMax(NV_ENC_CODEC_H264_GUID);
         // The max profile level supported by almost browsers is 5.2.
-        maxLevel = std::min(maxLevel, 52);
+        maxLevel = std::min(maxLevel, static_cast<int>(H264Level::kLevel5_2));
         return static_cast<H264Level>(maxLevel);
+    }
+    H265Level SupportedMaxH265Level(CUcontext context)
+    {
+        auto encoder = std::make_unique<NvEncoderCudaCapability>(context);
+
+        int maxLevel = encoder->GetLevelMax(NV_ENC_CODEC_HEVC_GUID);
+        maxLevel = std::min(maxLevel, static_cast<int>(H265Level::kLevel5_2));
+        return static_cast<H265Level>(maxLevel);
     }
 
     std::vector<SdpVideoFormat> SupportedH264EncoderCodecs(CUcontext context)
@@ -125,7 +133,7 @@ namespace webrtc
         std::vector<SdpVideoFormat> supportedFormats;
         for (auto& profile : supportedProfiles)
         {
-            supportedFormats.push_back(CreateH265Format(profile, supportedMaxLevel, H265Tier::kTier0, "SRST"));
+            supportedFormats.push_back(CreateH265Format(profile, supportedMaxLevel, H265Tier::kTier0));
         }
 
         return supportedFormats;
@@ -214,7 +222,12 @@ namespace webrtc
         NV_ENC_BUFFER_FORMAT format,
         ProfilerMarkerFactory* profiler)
     {
-        return std::make_unique<NvEncoderImpl>(codec, context, memoryType, format, profiler);
+        if (codec.name == cricket::kH264CodecName)
+            return std::make_unique<NvEncoderImplH264>(codec, context, memoryType, format, profiler);
+        if (codec.name == cricket::kH265CodecName)
+            return std::make_unique<NvEncoderImplH265>(codec, context, memoryType, format, profiler);
+
+        return nullptr;
     }
 
     bool NvEncoder::IsSupported(CUcontext context)
@@ -257,7 +270,12 @@ namespace webrtc
     std::unique_ptr<NvDecoder>
     NvDecoder::Create(const cricket::VideoCodec& codec, CUcontext context, ProfilerMarkerFactory* profiler)
     {
-        return std::make_unique<NvDecoderImpl>(context, profiler);
+        if (codec.name == cricket::kH264CodecName)
+            return std::make_unique<NvDecoderImplH264>(context, profiler);
+        if (codec.name == cricket::kH265CodecName)
+            return std::make_unique<NvDecoderImplH265>(context, profiler);
+
+        return nullptr;
     }
 
     NvEncoderFactory::NvEncoderFactory(CUcontext context, NV_ENC_BUFFER_FORMAT format, ProfilerMarkerFactory* profiler)
