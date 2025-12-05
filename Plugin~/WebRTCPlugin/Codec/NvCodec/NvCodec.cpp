@@ -20,12 +20,27 @@ namespace webrtc
 
     constexpr char kCodecName[] = "NvCodec";
 
+    static int GetCudaDeviceCapabilityMajorVersion(CUcontext context)
+    {
+        cuCtxSetCurrent(context);
+
+        CUdevice device;
+        cuCtxGetDevice(&device);
+
+        int major;
+        cuDeviceGetAttribute(&major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device);
+
+        return major;
+    }
+
     class NvEncoderCudaCapability : public NvEncoderCuda
     {
     public:
+
         NvEncoderCudaCapability(CUcontext cuContext)
             : NvEncoderCuda(cuContext, 0, 0, NV_ENC_BUFFER_FORMAT_UNDEFINED)
         {
+            RTC_LOG(LS_INFO) << "[NvCodec]" << "Cuda device capability major version: " << GetCudaDeviceCapabilityMajorVersion(cuContext);
         }
 
         std::vector<GUID> GetEncodeProfileGUIDs(GUID encodeGUID)
@@ -61,13 +76,13 @@ namespace webrtc
         return static_cast<H264Level>(maxLevel);
     }
 
-    std::vector<SdpVideoFormat> SupportedNvEncoderCodecs(CUcontext context)
+    std::vector<SdpVideoFormat> SupportedH264EncoderCodecs(CUcontext context)
     {
         auto encoder = std::make_unique<NvEncoderCudaCapability>(context);
 
         int maxLevel = encoder->GetLevelMax(NV_ENC_CODEC_H264_GUID);
         // The max profile level supported by almost browsers is 5.2.
-        maxLevel = std::min(maxLevel, 52);
+        maxLevel = std::min(maxLevel, static_cast<int>(H264Level::kLevel5_2));
         H264Level supportedMaxLevel = static_cast<H264Level>(maxLevel);
 
         std::vector<GUID> profileGUIDs = encoder->GetEncodeProfileGUIDs(NV_ENC_CODEC_H264_GUID);
@@ -75,7 +90,7 @@ namespace webrtc
         std::vector<H264Profile> supportedProfiles;
         for (auto& guid : profileGUIDs)
         {
-            absl::optional<H264Profile> profile = GuidToProfile(guid);
+            std::optional<H264Profile> profile = H264GuidToProfile(guid);
             if (profile.has_value())
                 supportedProfiles.push_back(profile.value());
         }
@@ -85,20 +100,45 @@ namespace webrtc
         {
             supportedFormats.push_back(CreateH264Format(profile, supportedMaxLevel, "1"));
         }
+
         return supportedFormats;
     }
 
-    static int GetCudaDeviceCapabilityMajorVersion(CUcontext context)
+    std::vector<SdpVideoFormat> SupportedH265EncoderCodecs(CUcontext context)
     {
-        cuCtxSetCurrent(context);
+        auto encoder = std::make_unique<NvEncoderCudaCapability>(context);
 
-        CUdevice device;
-        cuCtxGetDevice(&device);
+        int maxLevel = encoder->GetLevelMax(NV_ENC_CODEC_HEVC_GUID);
+        maxLevel = std::min(maxLevel, static_cast<int>(H265Level::kLevel5_2));
+        H265Level supportedMaxLevel = static_cast<H265Level>(maxLevel);
 
-        int major;
-        cuDeviceGetAttribute(&major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device);
+        std::vector<GUID> profileGUIDs = encoder->GetEncodeProfileGUIDs(NV_ENC_CODEC_HEVC_GUID);
 
-        return major;
+        std::vector<H265Profile> supportedProfiles;
+        for (auto& guid : profileGUIDs)
+        {
+            std::optional<H265Profile> profile = H265GuidToProfile(guid);
+            if (profile.has_value())
+                supportedProfiles.push_back(profile.value());
+        }
+
+        std::vector<SdpVideoFormat> supportedFormats;
+        for (auto& profile : supportedProfiles)
+        {
+            supportedFormats.push_back(CreateH265Format(profile, supportedMaxLevel, H265Tier::kTier0, "SCTP"));
+        }
+
+        return supportedFormats;
+    }
+
+    std::vector<SdpVideoFormat> SupportedNvEncoderCodecs(CUcontext context)
+    {
+        std::vector<SdpVideoFormat> supportedFormats;
+        std::vector<SdpVideoFormat> h264Formats = SupportedH264EncoderCodecs(context);
+        std::vector<SdpVideoFormat> h265Formats = SupportedH265EncoderCodecs(context);
+        supportedFormats.insert(supportedFormats.end(), h264Formats.begin(), h264Formats.end());
+        supportedFormats.insert(supportedFormats.end(), h265Formats.begin(), h265Formats.end());
+        return supportedFormats;
     }
 
     std::vector<SdpVideoFormat> SupportedNvDecoderCodecs(CUcontext context)
@@ -125,6 +165,27 @@ namespace webrtc
                 CreateH264Format(webrtc::H264Profile::kProfileBaseline, webrtc::H264Level::kLevel5_1, "1"),
                 CreateH264Format(webrtc::H264Profile::kProfileHigh, webrtc::H264Level::kLevel5_1, "1"),
                 CreateH264Format(webrtc::H264Profile::kProfileMain, webrtc::H264Level::kLevel5_1, "1"),
+            };
+        }
+
+        for (auto& format : supportedFormats)
+        {
+            format.parameters.emplace(kSdpKeyNameCodecImpl, kCodecName);
+        }
+
+        return supportedFormats;
+    }
+
+    std::vector<SdpVideoFormat> SupportedH265DecoderCodecs(CUcontext context)
+    {
+        std::vector<SdpVideoFormat> supportedFormats;
+
+        // NvDecoder supports H265 Profile Main and Main10 from Pascal (Compute Capability 6.x).
+        if (GetCudaDeviceCapabilityMajorVersion(context) >= 6)
+        {
+            supportedFormats = {
+                CreateH265Format(webrtc::H265Profile::kProfileMain, webrtc::H265Level::kLevel5_1, webrtc::H265Tier::kTier0, "SCTP"),
+                CreateH265Format(webrtc::H265Profile::kProfileMain10, webrtc::H265Level::kLevel5_1, webrtc::H265Tier::kTier0, "SCTP"),
             };
         }
 
@@ -216,7 +277,7 @@ namespace webrtc
         return SupportedNvDecoderCodecs(context_);
     }
 
-    std::unique_ptr<VideoEncoder> NvEncoderFactory::CreateVideoEncoder(const SdpVideoFormat& format)
+    std::unique_ptr<VideoEncoder> NvEncoderFactory::Create(const Environment& env,const SdpVideoFormat& format)
     {
         // todo(kazuki):: add CUmemorytype::CU_MEMORYTYPE_DEVICE option
         return NvEncoder::Create(cricket::CreateVideoCodec(format), context_, CU_MEMORYTYPE_ARRAY, format_, profiler_);
@@ -234,7 +295,7 @@ namespace webrtc
         return SupportedNvDecoderCodecs(context_);
     }
 
-    std::unique_ptr<VideoDecoder> NvDecoderFactory::CreateVideoDecoder(const SdpVideoFormat& format)
+    std::unique_ptr<VideoDecoder> NvDecoderFactory::Create(const Environment& env, const SdpVideoFormat& format)
     {
         return NvDecoder::Create(cricket::CreateVideoCodec(format), context_, profiler_);
     }

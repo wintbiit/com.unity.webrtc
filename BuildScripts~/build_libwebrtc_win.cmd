@@ -49,7 +49,7 @@ for %%i in (x64) do (
 
     rem generate ninja for release
     call gn.bat gen %OUTPUT_DIR% --root="src" ^
-      --args="is_debug=%%j is_clang=true target_cpu=\"%%i\" use_custom_libcxx=false rtc_include_tests=false rtc_build_examples=false rtc_use_h264=false symbol_level=0 enable_iterator_debugging=false use_cxx17=true"
+      --args="is_debug=%%j is_clang=true target_cpu=\"%%i\" use_custom_libcxx=false rtc_include_tests=false rtc_build_examples=false rtc_use_h264=false rtc_use_h265=true proprietary_codecs=true symbol_level=0 enable_iterator_debugging=false use_cxx17=true"
 
     rem build
     call ninja.bat -C %OUTPUT_DIR% webrtc
@@ -77,6 +77,8 @@ powershell -File "%COMMAND_DIR%\Unescape.ps1" "%OUTPUT_DIR%\LICENSE.md"
 
 rem copy header
 xcopy src\*.h "%ARTIFACTS_DIR%\include" /C /S /I /F /H
+
+xcopy src\*.inc "%ARTIFACTS_DIR%\include" /C /S /I /F /H
 
 rem copy license
 copy "%OUTPUT_DIR%\LICENSE.md" "%ARTIFACTS_DIR%"
