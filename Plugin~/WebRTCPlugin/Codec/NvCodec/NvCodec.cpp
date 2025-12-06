@@ -216,7 +216,7 @@ namespace webrtc
     }
 
     std::unique_ptr<NvEncoder> NvEncoder::Create(
-        const cricket::VideoCodec& codec,
+        const cricket::Codec& codec,
         CUcontext context,
         CUmemorytype memoryType,
         NV_ENC_BUFFER_FORMAT format,
@@ -268,7 +268,7 @@ namespace webrtc
     }
 
     std::unique_ptr<NvDecoder>
-    NvDecoder::Create(const cricket::VideoCodec& codec, CUcontext context, ProfilerMarkerFactory* profiler)
+    NvDecoder::Create(const cricket::Codec& codec, CUcontext context, ProfilerMarkerFactory* profiler)
     {
         if (codec.name == cricket::kH264CodecName)
             return std::make_unique<NvDecoderImplH264>(context, profiler);

@@ -6,6 +6,7 @@
 #include <common_video/H265/H265_common.h>
 #include <media/base/media_constants.h>
 #include <modules/video_coding/include/video_codec_interface.h>
+#include "modules/video_coding/include/video_error_codes.h"
 #include <modules/video_coding/utility/simulcast_utility.h>
 
 #include "Codec/H265ProfileLevelId.h"
@@ -27,7 +28,7 @@ namespace webrtc
     std::vector<SdpVideoFormat> NvEncoderImplH265::s_formats;
 
     NvEncoderImplH265::NvEncoderImplH265(
-        const cricket::VideoCodec& codec,
+        const cricket::Codec& codec,
         CUcontext context,
         CUmemorytype memoryType,
         NV_ENC_BUFFER_FORMAT format,

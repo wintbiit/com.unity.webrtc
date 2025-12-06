@@ -9,6 +9,7 @@
 #include <rtc_base/task_utils/repeating_task.h>
 
 #include "WebRTCPlugin.h"
+#include "api/task_queue/task_queue_factory.h"
 
 namespace unity
 {

@@ -99,6 +99,9 @@
 // audio codec isac
 #define WEBRTC_USE_BUILTIN_ISAC_FLOAT 1
 
+namespace rtc = ::webrtc;
+namespace cricket = ::webrtc;
+
 namespace unity
 {
 namespace webrtc

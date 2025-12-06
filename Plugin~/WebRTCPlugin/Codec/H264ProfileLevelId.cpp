@@ -1,7 +1,5 @@
 #include "pch.h"
 
-#include <rtc_base/arraysize.h>
-
 #include "H264ProfileLevelId.h"
 
 #include "api/video_codecs/h265_profile_tier_level.h"
@@ -48,7 +46,7 @@ namespace webrtc
         if (maxFramePixelCount <= 0 || maxFramerate <= 0 || maxBitrate <= 0)
             return absl::nullopt;
 
-        for (size_t i = 0; i < arraysize(kLevelConstraints); i++)
+        for (size_t i = 0; i < ABSL_ARRAYSIZE(kLevelConstraints); i++)
         {
             const LevelConstraint& level_constraint = kLevelConstraints[i];
             if (level_constraint.max_macroblock_frame_size * kPixelsPerMacroblock >= maxFramePixelCount &&
@@ -66,7 +64,7 @@ namespace webrtc
 
     int SupportedMaxFramerate(H264Level level, int maxFramePixelCount)
     {
-        for (size_t i = 0; i < arraysize(kLevelConstraints); i++)
+        for (size_t i = 0; i < ABSL_ARRAYSIZE(kLevelConstraints); i++)
         {
             const LevelConstraint& level_constraint = kLevelConstraints[i];
             if (level_constraint.level == level)

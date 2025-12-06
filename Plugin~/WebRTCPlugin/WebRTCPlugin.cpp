@@ -64,11 +64,11 @@ namespace webrtc
         cricket::MediaType mediaType;
         if (kind == "video")
         {
-            mediaType = cricket::MEDIA_TYPE_VIDEO;
+            mediaType = cricket::MediaType::VIDEO;
         }
         else if (kind == "audio")
         {
-            mediaType = cricket::MEDIA_TYPE_AUDIO;
+            mediaType = cricket::MediaType::AUDIO;
         }
         return std::make_tuple(mediaType, name);
     }
@@ -1418,7 +1418,7 @@ extern "C"
     ContextGetSenderCapabilities(Context* context, TrackKind trackKind, RTCRtpCapabilities** parameters)
     {
         RtpCapabilities src;
-        cricket::MediaType type = trackKind == TrackKind::Audio ? cricket::MEDIA_TYPE_AUDIO : cricket::MEDIA_TYPE_VIDEO;
+        cricket::MediaType type = trackKind == TrackKind::Audio ? cricket::MediaType::AUDIO : cricket::MediaType::VIDEO;
         context->GetRtpSenderCapabilities(type, &src);
 
         RTCRtpCapabilities* dst = static_cast<RTCRtpCapabilities*>(CoTaskMemAlloc(sizeof(RTCRtpCapabilities)));
@@ -1430,7 +1430,7 @@ extern "C"
     ContextGetReceiverCapabilities(Context* context, TrackKind trackKind, RTCRtpCapabilities** parameters)
     {
         RtpCapabilities src;
-        cricket::MediaType type = trackKind == TrackKind::Audio ? cricket::MEDIA_TYPE_AUDIO : cricket::MEDIA_TYPE_VIDEO;
+        cricket::MediaType type = trackKind == TrackKind::Audio ? cricket::MediaType::AUDIO : cricket::MediaType::VIDEO;
         context->GetRtpReceiverCapabilities(type, &src);
 
         RTCRtpCapabilities* dst = static_cast<RTCRtpCapabilities*>(CoTaskMemAlloc(sizeof(RTCRtpCapabilities)));

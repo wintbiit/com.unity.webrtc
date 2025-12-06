@@ -39,7 +39,7 @@ namespace webrtc
     {
     public:
         static std::unique_ptr<NvEncoder> Create(
-            const cricket::VideoCodec& codec,
+            const cricket::Codec& codec,
             CUcontext context,
             CUmemorytype memoryType,
             NV_ENC_BUFFER_FORMAT format,
@@ -52,7 +52,7 @@ namespace webrtc
     {
     public:
         static std::unique_ptr<NvDecoder>
-        Create(const cricket::VideoCodec& codec, CUcontext context, ProfilerMarkerFactory* profiler);
+        Create(const cricket::Codec& codec, CUcontext context, ProfilerMarkerFactory* profiler);
         static bool IsSupported();
 
         ~NvDecoder() override { }

@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "H265ProfileLevelId.h"
 #include "rtc_base/checks.h"
-#include <rtc_base/arraysize.h>
 
 namespace unity
 {
@@ -59,7 +58,7 @@ namespace webrtc
         // Calculate samples per second required
         uint32_t requiredSamplesPerSec = static_cast<uint32_t>(maxFramePixelCount) * static_cast<uint32_t>(maxFramerate);
 
-        for (size_t i = 0; i < arraysize(kH265LevelConstraints); i++)
+        for (size_t i = 0; i < ABSL_ARRAYSIZE(kH265LevelConstraints); i++)
         {
             const H265LevelConstraint& constraint = kH265LevelConstraints[i];
 
@@ -82,7 +81,7 @@ namespace webrtc
         if (maxFramePixelCount <= 0)
             return 0;
 
-        for (size_t i = 0; i < arraysize(kH265LevelConstraints); i++)
+        for (size_t i = 0; i < ABSL_ARRAYSIZE(kH265LevelConstraints); i++)
         {
             const H265LevelConstraint& constraint = kH265LevelConstraints[i];
             if (constraint.level == level)
