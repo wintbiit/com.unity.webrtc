@@ -193,11 +193,19 @@ namespace webrtc
         m_initializeParams.frameRateDen = 1;
 
         m_encodeConfig.profileGUID = m_profileGuid;
-        m_encodeConfig.gopLength = NVENC_INFINITE_GOPLENGTH;
+        // Set a finite GOP so IDR frames are emitted periodically (~2 seconds).
+        // NVENC_INFINITE_GOPLENGTH prevents late-joining decoders from ever
+        // receiving a decodable IDR.
+        const uint32_t gopLength =
+            static_cast<uint32_t>(m_configurations[0].max_frame_rate) * 2;
+        m_encodeConfig.gopLength = gopLength;
         m_encodeConfig.frameIntervalP = 1;
         m_encodeConfig.encodeCodecConfig.hevcConfig.level = static_cast<uint32_t>(m_level);
         m_encodeConfig.encodeCodecConfig.hevcConfig.tier = static_cast<uint32_t>(m_tier);
-        m_encodeConfig.encodeCodecConfig.hevcConfig.idrPeriod = NVENC_INFINITE_GOPLENGTH;
+        m_encodeConfig.encodeCodecConfig.hevcConfig.idrPeriod = gopLength;
+        // Prepend VPS(32)+SPS(33)+PPS(34) before every IDR frame so that
+        // late-joining decoders can initialize without waiting for a PLI/FIR.
+        m_encodeConfig.encodeCodecConfig.hevcConfig.repeatSPSPPS = 1;
         m_encodeConfig.rcParams.version = NV_ENC_RC_PARAMS_VER;
         m_encodeConfig.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CBR;
         m_encodeConfig.rcParams.averageBitRate = m_configurations[0].target_bps;
@@ -403,7 +411,10 @@ namespace webrtc
         for (uint32_t i = 0; i < naluIndices.size(); i++)
         {
             const H265::NaluType naluType = H265::ParseNaluType(packet[naluIndices[i].payload_start_offset]);
-            if (naluType == H265::kIdrNLp)
+            // HEVC has two IDR NAL unit types:
+            //   kIdrWRadl = 19 (IDR_W_RADL) – the type NVENC emits by default
+            //   kIdrNLp   = 20 (IDR_N_LP)
+            if (naluType == H265::kIdrWRadl || naluType == H265::kIdrNLp)
             {
                 m_encodedImage._frameType = VideoFrameType::kVideoFrameKey;
                 break;
